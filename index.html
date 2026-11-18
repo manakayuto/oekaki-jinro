@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1330">
+<title>絵描き人狼</title>
+<meta name="description" content="ひとり1筆ずつ描いて、お題を知らない人狼を見つけ出す。スマホで遊べるお絵かき人狼ゲーム。">
+<meta property="og:title" content="絵描き人狼">
+<meta property="og:description" content="ひとり1筆ずつ描いて、お題を知らない人狼を見つけ出す。部屋コードでみんなのスマホから参加できます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: 各自のスマホで遊ぶ縦長1カラム。夜の村（紺）の上に、紙のキャンバス（白）を置く */
+:root {
+  --night: #0f1330; --panel: #181d42; --panel-2: #222861; --line: #343c78;
+  --ink: #eef0ff; --muted: #a3aad8; --moon: #f4c54a; --moon-ink: #2a2105;
+  --wolf: #ff6b6b; --wolf-deep: #3a1220; --village: #4fd4b4; --village-deep: #0f3330;
+  --paper: #fbfaf5; --paper-ink: #20223a;
+  --f-display: "Dela Gothic One", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--night); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+#app {
+  max-width: 480px; margin: 0 auto; min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+h1, h2 { font-family: var(--f-display); font-weight: 400; letter-spacing: .02em; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: 14px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.grow { flex: 1; min-width: 0; }
+.center { text-align: center; }
+.spacer { flex: 1; }
+.brand { display: flex; align-items: center; gap: 12px; padding-top: 8px; }
+.moon { width: 44px; height: 44px; border-radius: 50%; background: var(--moon); box-shadow: inset -10px -6px 0 0 #d9a92a, 0 0 28px #f4c54a55; flex: none; }
+.brand h1 { font-size: 30px; line-height: 1.1; }
+.brand p { color: var(--muted); font-size: 13px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.label { font-size: 12px; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.btn { appearance: none; border: 0; border-radius: 12px; min-height: 52px; padding: 12px 18px; font-weight: 700; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .08s ease; }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:focus-visible, input:focus-visible, .chip:focus-visible, .choice:focus-visible { outline: 3px solid var(--moon); outline-offset: 2px; }
+.btn-primary { background: var(--moon); color: var(--moon-ink); }
+.btn-ghost { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); }
+.btn-wolf { background: transparent; color: var(--wolf); border: 1.5px solid var(--wolf); }
+.btn-block { width: 100%; }
+.btn-sm { min-height: 40px; font-size: 14px; padding: 8px 12px; border-radius: 10px; }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 14px; padding: 6px; }
+input[type="text"] { width: 100%; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 48px; }
+input[type="text"]::placeholder { color: #6f77a8; }
+input.code { font-family: var(--f-display); font-size: 24px; letter-spacing: .3em; text-transform: uppercase; text-align: center; }
+.err { color: var(--wolf); font-size: 14px; font-weight: 700; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--night); color: var(--muted); border-radius: 999px; padding: 6px 14px; font-size: 14px; min-height: 36px; }
+.chip[aria-pressed="true"] { background: var(--moon); color: var(--moon-ink); border-color: var(--moon); font-weight: 700; }
+.chip:disabled { cursor: default; }
+.toggle { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.track { width: 48px; height: 28px; border-radius: 999px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.toggle input:checked + .track { background: var(--village); }
+.toggle input:checked + .track::after { transform: translateX(20px); }
+.toggle input:disabled + .track { opacity: .6; }
+details.rules summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; }
+details.rules summary::after { content: "＋"; color: var(--muted); }
+details.rules[open] summary::after { content: "－"; }
+details.rules ul { margin: 10px 0 0; padding-left: 1.2em; color: var(--muted); font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+details.rules b { color: var(--ink); }
+.sticky-bottom { position: sticky; bottom: 0; padding-top: 12px; padding-bottom: env(safe-area-inset-bottom, 0px); background: linear-gradient(to bottom, transparent, var(--night) 30%); }
+.dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px #ffffff22; display: inline-block; }
+.dot-lg { width: 22px; height: 22px; }
+.avatar { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-size: 30px; color: #fff; box-shadow: 0 0 0 4px #ffffff18; flex: none; }
+
+/* 上部バー */
+.topbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.topbar .me { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; min-width: 0; }
+.topbar .me span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; background: var(--panel-2); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill-moon { background: var(--moon); color: var(--moon-ink); }
+.pill-btn { border: 1px solid var(--line); min-height: 32px; padding: 4px 12px; }
+.net { font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 8px; background: #3a2a0a; color: var(--moon); text-align: center; }
+.net.bad { background: var(--wolf-deep); color: var(--wolf); }
+
+/* ロビー */
+.code-big { font-family: var(--f-display); font-size: 44px; letter-spacing: .25em; text-align: center; line-height: 1.1; padding-left: .25em; }
+.qr { background: #fff; border-radius: 12px; padding: 10px; width: 168px; height: 168px; margin: 0 auto; display: grid; place-items: center; }
+.qr img { width: 100%; height: 100%; image-rendering: pixelated; }
+.plist { display: flex; flex-direction: column; gap: 8px; }
+.plist .p { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.plist .p .grow { overflow-wrap: anywhere; }
+.tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.tag.host { background: var(--moon); color: var(--moon-ink); }
+.tag.you { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); }
+.tag.off { background: #3a3f5c; color: #c8cbe0; }
+.tag.wolf { background: var(--wolf); color: #2b0a0a; }
+.tag.village { background: var(--village); color: #062320; }
+.waitline { color: var(--muted); font-size: 14px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .waitline .dots::after { content: "…"; animation: dots 1.4s steps(4) infinite; display: inline-block; width: 1.2em; text-align: left; overflow: hidden; vertical-align: bottom; } @keyframes dots { from { width: 0; } to { width: 1.2em; } } }
+
+/* 役職 */
+.role-card { border-radius: 18px; padding: 28px 20px; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; width: 100%; }
+.role-card.village { background: var(--village-deep); border: 2px solid var(--village); }
+.role-card.wolf { background: var(--wolf-deep); border: 2px solid var(--wolf); }
+.role-name { font-family: var(--f-display); font-size: 40px; line-height: 1.1; }
+.village .role-name { color: var(--village); }
+.wolf .role-name { color: var(--wolf); }
+.topic { background: var(--paper); color: var(--paper-ink); border-radius: 12px; padding: 14px 18px; width: 100%; }
+.topic .t-cat { font-size: 13px; color: #5d6185; }
+.topic .t-word { font-family: var(--f-display); font-size: 36px; line-height: 1.2; overflow-wrap: anywhere; }
+.status-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.status-chips .s { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); max-width: 100%; }
+.status-chips .s.done { color: var(--ink); border-color: var(--village); }
+.status-chips .s.off { opacity: .5; }
+.status-chips .s span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* お絵かき */
+.turn-bar { display: flex; align-items: center; gap: 12px; }
+.turn-bar .who { font-family: var(--f-display); font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.board-wrap { display: flex; justify-content: center; }
+.board { width: 100%; max-width: max(240px, min(100%, calc(100dvh - 360px))); aspect-ratio: 1; display: block; background: var(--paper); border-radius: 12px; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 10px 30px #00000055, 0 0 0 1px #ffffff14; }
+.board.small { max-width: min(100%, 300px); }
+.board.live { cursor: crosshair; box-shadow: 0 10px 30px #00000055, 0 0 0 3px var(--moon); }
+.board-hint { min-height: 52px; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 14px; }
+.board-hint b { color: var(--ink); }
+.order { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.order .o { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; max-width: 100%; }
+.order .o.now { border-color: var(--moon); color: var(--ink); font-weight: 700; }
+.order .o.off { opacity: .45; }
+.order .o span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roulette { display: flex; flex-direction: column; gap: 8px; }
+.roulette .r { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); font-weight: 700; transition: background .08s; }
+.roulette .r.hit { background: var(--moon); color: var(--moon-ink); border-color: var(--moon); }
+.roulette .r span { overflow-wrap: anywhere; }
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1.5px solid var(--line); text-align: left; min-height: 54px; font-weight: 700; }
+.choice[aria-checked="true"] { border-color: var(--wolf); background: var(--wolf-deep); }
+.choice .grow { overflow-wrap: anywhere; }
+.notice { background: var(--panel-2); border-radius: 10px; padding: 8px 12px; font-size: 14px; text-align: center; }
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 7em) 1fr 2em; gap: 10px; align-items: center; }
+.bar-row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
+.bar { height: 14px; border-radius: 7px; background: var(--panel-2); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 7px; background: var(--muted); }
+.bar-row.top .bar i { background: var(--wolf); }
+.bar-row .c { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.reveal { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; text-align: center; }
+.reveal .big { font-family: var(--f-display); font-size: 56px; line-height: 1.1; }
+.reveal .big.wolf { color: var(--wolf); text-shadow: 0 0 24px #ff3b3b88; }
+.reveal .big.village { color: var(--village); text-shadow: 0 0 24px #4fd4b488; }
+.banner { border-radius: 18px; padding: 22px 18px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.banner.wolf { background: var(--wolf-deep); border: 2px solid var(--wolf); }
+.banner.village { background: var(--village-deep); border: 2px solid var(--village); }
+.banner .win { font-family: var(--f-display); font-size: 34px; line-height: 1.2; }
+.banner.wolf .win { color: var(--wolf); }
+.banner.village .win { color: var(--village); }
+.legend { display: flex; flex-direction: column; gap: 6px; }
+.legend .l { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.legend .l .grow { overflow-wrap: anywhere; }
+.votes-got { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.guess-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.guess-compare > div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; text-align: center; min-width: 0; }
+.guess-compare .v { font-family: var(--f-display); font-size: 24px; overflow-wrap: anywhere; line-height: 1.3; }
+.sheet-back { position: fixed; inset: 0; background: #05071acc; display: flex; align-items: flex-end; justify-content: center; z-index: 20; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.sheet { width: 100%; max-width: 456px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; max-height: 90vh; overflow: auto; }
+.sheet h2 { font-size: 22px; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--night); font-weight: 700; padding: 10px 16px; border-radius: 999px; z-index: 30; font-size: 14px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="fx.js"></script>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<script>
+(() => {
+  'use strict';
+  const COLORS = ['#e5484d', '#2f6fde', '#1f9d55', '#e08a00', '#8e4ec6', '#d6409f', '#0b9ab0', '#8a6232', '#4a4f6a', '#c2410c'];
+  const MIN = 3, MAX = 10, ROUNDS = 3;
+  const TOPICS = {
+    '動物': [['ねこ','猫','ネコ'],['いぬ','犬','イヌ'],['ぞう','象','ゾウ'],['きりん','キリン'],['ペンギン'],['うさぎ','ウサギ','兎'],['ライオン'],['かめ','亀','カメ'],['パンダ'],['タコ','たこ','蛸'],['へび','蛇','ヘビ'],['くじら','鯨','クジラ'],['カニ','かに','蟹'],['フクロウ','ふくろう'],['ワニ','わに']],
+    '食べ物': [['りんご','リンゴ','林檎'],['バナナ'],['ラーメン'],['おにぎり'],['すし','寿司','お寿司','おすし'],['ケーキ'],['ハンバーガー'],['ピザ'],['ソフトクリーム'],['たこ焼き','たこやき'],['ぶどう','ブドウ','葡萄'],['スイカ','すいか','西瓜'],['ドーナツ'],['エビフライ','えびふらい'],['目玉焼き','めだまやき']],
+    '乗り物': [['自転車','じてんしゃ'],['新幹線','しんかんせん'],['飛行機','ひこうき'],['船','ふね'],['ヘリコプター','ヘリ'],['バス'],['ロケット'],['消防車','しょうぼうしゃ'],['気球','ききゅう'],['スケートボード','スケボー'],['電車','でんしゃ'],['パトカー']],
+    '道具': [['はさみ','ハサミ','鋏'],['かさ','傘','カサ'],['めがね','眼鏡','メガネ'],['えんぴつ','鉛筆'],['時計','とけい'],['スマホ','スマートフォン'],['かぎ','鍵','カギ'],['ハンガー'],['歯ブラシ','はぶらし'],['ほうき','箒'],['フライパン'],['カメラ'],['電球','でんきゅう'],['ギター']],
+    '場所・建物': [['東京タワー','とうきょうたわー'],['お城','おしろ','城'],['学校','がっこう'],['富士山','ふじさん'],['観覧車','かんらんしゃ'],['灯台','とうだい'],['神社','じんじゃ'],['すべり台','すべりだい','滑り台'],['ピラミッド'],['コンビニ'],['温泉','おんせん'],['病院','びょういん']],
+    'スポーツ': [['サッカー'],['野球','やきゅう'],['テニス'],['ボウリング'],['スキー'],['相撲','すもう'],['バスケットボール','バスケ'],['卓球','たっきゅう'],['ゴルフ'],['水泳','すいえい'],['柔道','じゅうどう'],['ボクシング']],
+    '自然': [['太陽','たいよう'],['虹','にじ'],['雪だるま','ゆきだるま'],['火山','かざん'],['雷','かみなり'],['ひまわり','ヒマワリ','向日葵'],['月','つき'],['星','ほし'],['サボテン'],['きのこ','キノコ'],['竜巻','たつまき'],['さくら','桜','サクラ']]
+  };
+  const CATS = Object.keys(TOPICS);
+  const HOST_PREFIX = 'ejr-oekakijinro-v1-';
+  const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const FXo = window.FX || { role() {}, suspense: () => Promise.resolve(), reveal() {}, win() {}, muteButton: () => '', sfx: new Proxy({}, { get: () => () => {} }) };
+
+  const $app = document.getElementById('app');
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rand = n => Math.floor(Math.random() * n);
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const norm = s => String(s || '').normalize('NFKC').trim().toLowerCase().replace(/\s+/g, '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  const mkStore = st => ({
+    get(k, d) { try { const v = st.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { st.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { st.removeItem(k); } catch (e) {} }
+  });
+  const LS = mkStore(window.localStorage), SS = mkStore(window.sessionStorage);
+  const cleanName = s => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 10);
+  const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  const genCode = () => Array.from({ length: 4 }, () => CODE_CHARS[rand(CODE_CHARS.length)]).join('');
+  const newPid = () => 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+  let roomParam = cleanCode(new URLSearchParams(location.search).get('room'));
+  let myPid = SS.get('ejr-pid', null) || newPid();
+  SS.set('ejr-pid', myPid);
+  let myName = cleanName(LS.get('ejr-name', ''));
+
+  const net = { role: null, status: 'idle', code: null, peer: null, conn: null, error: '', ever: false, retry: 0, lastHeard: 0, tries: 0 };
+  let V = null;               // ホストから届いた自分用の画面情報
+  let strokes = [];           // 確定した線
+  let remoteLive = null;      // 他の人が描いている途中の線 {p, pts}
+  const U = { sel: null, pending: null, cur: null, pid: null, rouletteFor: null, revealFor: null, roleFxFor: null, winFor: null, lastTurnPing: null, lastKey: '' };
+
+  // ====================================================================
+  // ホスト（部屋の親）— ゲームの正本を持ち、各自に見てよい情報だけ送る
+  // ====================================================================
+  let G = null;
+  const conns = new Map();
+  const lastSeen = new Map();
+  const blankGame = () => ({ wolves: [], topic: null, order: [], turn: 0, strokes: [], ready: [], votes: {}, candidates: null, runoff: false, firstVotes: null, voteReason: '', voteBy: null, accused: null, guess: '', guessOk: false, winner: null, reason: '' });
+  const isOnline = pid => pid === G.hostPid || conns.has(pid);
+  const inGame = pid => G.players.some(p => p.pid === pid);
+  const drawerPid = () => G.order[G.turn % G.players.length];
+  const totalTurns = () => G.players.length * ROUNDS;
+  const nameOf = pid => { const p = G.players.find(x => x.pid === pid) || G.waiting.find(x => x.pid === pid); return p ? p.name : '?'; };
+
+  function hostInit(code) {
+    G = Object.assign({ code, gameNo: 0, phase: 'lobby', hostPid: myPid, players: [{ pid: myPid, name: myName }], waiting: [], settings: { cat: 'おまかせ', showCat: true }, lastWord: null }, blankGame());
+  }
+  function uniqueName(name, pid) {
+    const taken = new Set(G.players.concat(G.waiting).filter(p => p.pid !== pid).map(p => p.name));
+    let n = name || 'プレイヤー', k = 2;
+    while (taken.has(n)) n = (name || 'プレイヤー') + k++;
+    return n;
+  }
+  function countsOf(votes) {
+    const c = {};
+    G.players.forEach(p => { c[p.pid] = 0; });
+    Object.values(votes || {}).forEach(t => { if (c[t] != null) c[t]++; });
+    return c;
+  }
+  function viewFor(pid) {
+    const ig = inGame(pid);
+    const wolf = G.wolves.includes(pid);
+    const showTopic = G.topic && ((ig && !wolf) || G.phase === 'judge' || G.phase === 'end');
+    const afterVote = ['tally', 'reveal', 'guess', 'judge', 'end'].includes(G.phase);
+    const roleShown = ['reveal', 'guess', 'judge', 'end'].includes(G.phase);
+    return {
+      code: G.code, gameNo: G.gameNo, phase: G.phase, hostPid: G.hostPid, me: pid, inGame: ig,
+      players: G.players.map((p, i) => ({ pid: p.pid, name: p.name, color: COLORS[i % COLORS.length], online: isOnline(p.pid) })),
+      waiting: G.waiting.map(p => ({ pid: p.pid, name: p.name, online: isOnline(p.pid) })),
+      settings: G.settings,
+      role: ig && G.phase !== 'lobby' ? (wolf ? 'wolf' : 'village') : null,
+      topic: G.topic ? (showTopic ? { cat: G.topic.cat, word: G.topic.word } : { cat: (G.settings.showCat || !ig) ? G.topic.cat : null, word: null }) : null,
+      showCat: G.settings.showCat,
+      mates: wolf ? G.wolves.filter(w => w !== pid) : [],
+      wolves: G.phase === 'end' ? G.wolves : [],
+      order: G.order, turn: G.turn, total: G.players.length ? totalTurns() : 0, strokeCount: G.strokes.length,
+      ready: G.ready, voted: Object.keys(G.votes), myVote: G.votes[pid] == null ? null : G.votes[pid],
+      counts: afterVote ? countsOf(G.phase === 'end' ? (G.firstVotes || G.votes) : G.votes) : null,
+      candidates: G.candidates, runoff: G.runoff, voteReason: G.voteReason, voteBy: G.voteBy,
+      accused: G.accused, accusedRole: roleShown && G.accused ? (G.wolves.includes(G.accused) ? 'wolf' : 'village') : null,
+      guess: (G.phase === 'judge' || G.phase === 'end') ? G.guess : '', guessOk: G.guessOk,
+      winner: G.winner, reason: G.reason, firstVotesUsed: !!G.firstVotes
+    };
+  }
+  function persist() { LS.set('ejr-host', { code: G.code, hostPid: G.hostPid, G, t: Date.now() }); }
+  function safeSend(conn, m) { try { if (conn && conn.open) conn.send(m); } catch (e) {} }
+  function broadcast() {
+    for (const [pid, c] of conns) safeSend(c, { t: 'state', v: viewFor(pid) });
+    onHostMsg({ t: 'state', v: viewFor(myPid) });
+  }
+  function broadcastAll(m, exceptPid) {
+    for (const [pid, c] of conns) if (pid !== exceptPid) safeSend(c, m);
+    if (myPid !== exceptPid) onHostMsg(m);
+  }
+  function strokeChunks() {
+    const out = [];
+    for (let i = 0; i < Math.max(1, G.strokes.length); i += 4) out.push({ t: 'strokes', from: i, list: G.strokes.slice(i, i + 4), total: G.strokes.length });
+    return out;
+  }
+  function sendStrokes(conn) { strokeChunks().forEach(m => safeSend(conn, m)); }
+  function sendStrokesAll() { const ch = strokeChunks(); for (const c of conns.values()) ch.forEach(m => safeSend(c, m)); ch.forEach(onHostMsg); }
+  function commit() { persist(); broadcast(); }
+
+  function hostStartGame() {
+    G.players = G.players.filter(p => isOnline(p.pid)).concat(G.waiting.filter(w => isOnline(w.pid))).slice(0, MAX);
+    G.waiting = [];
+    if (G.players.length < MIN) { G.phase = 'lobby'; Object.assign(G, blankGame()); commit(); return; }
+    Object.assign(G, blankGame());
+    G.players.forEach(p => { p.name = uniqueName(p.name, p.pid); });
+    const n = G.players.length;
+    G.gameNo++;
+    G.wolves = shuffle(G.players.map(p => p.pid)).slice(0, n >= 5 ? 2 : 1);
+    const cat = G.settings.cat === 'おまかせ' ? CATS[rand(CATS.length)] : G.settings.cat;
+    const list = TOPICS[cat];
+    let entry = list[rand(list.length)];
+    if (entry[0] === G.lastWord && list.length > 1) entry = list[(list.indexOf(entry) + 1) % list.length];
+    G.lastWord = entry[0];
+    G.topic = { cat, word: entry[0], alias: entry.slice(1) };
+    const first = rand(n);
+    G.order = G.players.map((_, k) => G.players[(first + k) % n].pid);
+    G.phase = 'roles';
+    sendStrokesAll();
+    commit();
+  }
+  function toFirstpick() { G.phase = 'firstpick'; scheduleDraw(); commit(); }
+  function scheduleDraw() {
+    const no = G.gameNo;
+    setTimeout(() => { if (G && G.phase === 'firstpick' && G.gameNo === no) { G.phase = 'draw'; commit(); } }, reduceMotion() ? 2200 : 4600);
+  }
+  function toVote(reason, by) {
+    broadcastAll({ t: 'live', p: null, pts: null });
+    Object.assign(G, { phase: 'vote', votes: {}, candidates: null, runoff: false, firstVotes: null, voteReason: reason, voteBy: by || null });
+  }
+  function maybeTally() { if (G.players.every(p => G.votes[p.pid] != null)) G.phase = 'tally'; }
+  function finish(winner, reason) { G.winner = winner; G.reason = reason; G.phase = 'end'; }
+  const okPts = pts => Array.isArray(pts) && pts.length > 0 && pts.length <= 600 && pts.every(q => Array.isArray(q) && q.length === 2 && q.every(x => typeof x === 'number' && x >= 0 && x <= 1));
+
+  function hostAction(pid, m) {
+    if (!m || typeof m.t !== 'string') return;
+    const isHost = pid === G.hostPid;
+    switch (m.t) {
+      case 'settings':
+        if (!isHost || G.phase !== 'lobby') return;
+        if (['おまかせ', ...CATS].includes(m.cat)) G.settings.cat = m.cat;
+        if (typeof m.showCat === 'boolean') G.settings.showCat = m.showCat;
+        return commit();
+      case 'start':
+        if (!isHost || !['lobby', 'end'].includes(G.phase)) return;
+        return hostStartGame();
+      case 'lobby':
+        if (!isHost || G.phase !== 'end') return;
+        G.players = G.players.filter(p => isOnline(p.pid)).concat(G.waiting.filter(w => isOnline(w.pid))).slice(0, MAX);
+        G.waiting = []; G.phase = 'lobby'; Object.assign(G, blankGame());
+        sendStrokesAll(); return commit();
+      case 'ready':
+        if (G.phase !== 'roles' || !inGame(pid) || G.ready.includes(pid)) return;
+        G.ready.push(pid);
+        if (G.players.every(p => G.ready.includes(p.pid))) return toFirstpick();
+        return commit();
+      case 'force':
+        if (!isHost) return;
+        if (G.phase === 'roles') return toFirstpick();
+        if (G.phase === 'vote') { G.phase = 'tally'; return commit(); }
+        if (G.phase === 'draw' && !isOnline(drawerPid())) {
+          G.turn++; if (G.turn >= totalTurns()) toVote('rounds');
+          return commit();
+        }
+        return;
+      case 'live':
+        if (G.phase !== 'draw' || drawerPid() !== pid) return;
+        if (m.pts !== null && !okPts(m.pts)) return;
+        return broadcastAll({ t: 'live', p: pid, pts: m.pts }, pid);
+      case 'stroke': {
+        if (G.phase !== 'draw' || drawerPid() !== pid || !okPts(m.pts) || m.turn !== G.turn) return;
+        const s = { p: pid, pts: m.pts };
+        G.strokes.push(s);
+        broadcastAll({ t: 'stroke', i: G.strokes.length - 1, s });
+        G.turn++;
+        if (G.turn >= totalTurns()) toVote('rounds');
+        return commit();
+      }
+      case 'early':
+        if (G.phase !== 'draw' || !inGame(pid)) return;
+        toVote('early', pid); return commit();
+      case 'vote': {
+        if (G.phase !== 'vote' || !inGame(pid) || G.votes[pid] != null) return;
+        const cands = G.candidates || G.players.map(p => p.pid);
+        if (!cands.includes(m.target) || m.target === pid) return;
+        G.votes[pid] = m.target; maybeTally(); return commit();
+      }
+      case 'next': {
+        if (!inGame(pid)) return;
+        if (G.phase === 'tally') {
+          const cands = G.candidates || G.players.map(p => p.pid);
+          const c = countsOf(G.votes);
+          const max = Math.max(...cands.map(k => c[k]));
+          const tops = cands.filter(k => c[k] === max);
+          if (tops.length > 1) {
+            if (G.runoff) finish('wolf', '同票で人狼を特定できませんでした');
+            else { G.firstVotes = G.votes; G.candidates = tops; G.runoff = true; G.votes = {}; G.phase = 'vote'; }
+          } else { G.accused = tops[0]; G.phase = 'reveal'; }
+          return commit();
+        }
+        if (G.phase === 'reveal') {
+          if (G.wolves.includes(G.accused)) G.phase = 'guess';
+          else finish('wolf', `市民の${nameOf(G.accused)}さんを選んでしまいました`);
+          return commit();
+        }
+        if (G.phase === 'judge' && G.guessOk) { finish('wolf', `人狼の${nameOf(G.accused)}さんがお題を当てて逆転しました`); return commit(); }
+        return;
+      }
+      case 'guess': {
+        if (G.phase !== 'guess' || pid !== G.accused) return;
+        const g = String(m.text || '').trim().slice(0, 20);
+        if (!g) return;
+        G.guess = g;
+        G.guessOk = [G.topic.word, ...G.topic.alias].some(w => norm(w) === norm(g));
+        G.phase = 'judge'; return commit();
+      }
+      case 'judge':
+        if (G.phase !== 'judge' || G.guessOk || !inGame(pid) || G.wolves.includes(pid)) return;
+        if (m.ok) finish('wolf', `人狼の${nameOf(G.accused)}さんがお題を当てて逆転しました`);
+        else finish('village', `人狼の${nameOf(G.accused)}さんを見つけ、お題も守りきりました`);
+        return commit();
+      case 'sync':
+        return;
+    }
+  }
+
+  function hostOnData(conn, m) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'hello') {
+      let pid = String(m.pid || '').slice(0, 40);
+      const name = cleanName(m.name) || 'プレイヤー';
+      if (!pid) return;
+      let p = G.players.find(x => x.pid === pid) || G.waiting.find(x => x.pid === pid);
+      if (!p && G.phase !== 'lobby') {
+        const same = G.players.find(x => x.name === name && !isOnline(x.pid));
+        if (same) { safeSend(conn, { t: 'adopt', pid: same.pid }); pid = same.pid; p = same; }
+      }
+      if (!p) {
+        if (G.phase === 'lobby') {
+          if (G.players.length >= MAX) { safeSend(conn, { t: 'reject', reason: 'full' }); return; }
+          G.players.push({ pid, name: uniqueName(name, pid) });
+        } else {
+          G.waiting.push({ pid, name: uniqueName(name, pid) });
+        }
+      } else if (G.phase === 'lobby') {
+        p.name = uniqueName(name, pid);
+      }
+      const old = conns.get(pid);
+      if (old && old !== conn) { old._replaced = true; try { old.close(); } catch (e) {} }
+      conn._pid = pid;
+      conns.set(pid, conn);
+      lastSeen.set(pid, Date.now());
+      sendStrokes(conn);
+      commit();
+      return;
+    }
+    const pid = conn._pid;
+    if (!pid || conns.get(pid) !== conn) return;
+    lastSeen.set(pid, Date.now());
+    if (m.t === 'ping') { safeSend(conn, { t: 'pong' }); return; }
+    if (m.t === 'sync') { sendStrokes(conn); safeSend(conn, { t: 'state', v: viewFor(pid) }); return; }
+    hostAction(pid, m);
+  }
+  function hostOnClose(conn) {
+    const pid = conn._pid;
+    if (!pid || conns.get(pid) !== conn) return;
+    conns.delete(pid);
+    if (G.phase === 'lobby') G.players = G.players.filter(p => p.pid !== pid || p.pid === G.hostPid);
+    G.waiting = G.waiting.filter(p => p.pid !== pid);
+    commit();
+  }
+  setInterval(() => {
+    if (net.role !== 'host' || !G) return;
+    const now = Date.now();
+    for (const [pid, c] of conns) if (now - (lastSeen.get(pid) || 0) > 15000) { try { c.close(); } catch (e) {} hostOnClose(c); }
+  }, 4000);
+
+  function startHost(code, resume) {
+    if (typeof Peer === 'undefined') { net.error = '通信ライブラリを読み込めませんでした。電波の良い場所で再読み込みしてください。'; net.status = 'error'; render(true); return; }
+    net.role = 'host'; net.code = code; net.status = 'connecting'; net.tries = 0;
+    const make = () => {
+      const peer = new Peer(HOST_PREFIX + code, { debug: 0 });
+      net.peer = peer;
+      peer.on('open', () => { net.status = 'online'; net.error = ''; render(); });
+      peer.on('connection', conn => {
+        conn.on('data', m => hostOnData(conn, m));
+        conn.on('close', () => { if (!conn._replaced) hostOnClose(conn); });
+        conn.on('error', () => { if (!conn._replaced) hostOnClose(conn); });
+      });
+      peer.on('disconnected', () => { net.status = 'reconnecting'; render(); setTimeout(() => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) {} }, 1500); });
+      peer.on('error', err => {
+        if (err.type === 'unavailable-id') {
+          try { peer.destroy(); } catch (e) {}
+          if (resume && net.tries++ < 20) { net.status = 'reconnecting'; render(); setTimeout(make, 3000); return; }
+          if (!resume) { code = genCode(); G.code = code; net.code = code; history.replaceState(null, '', '?room=' + code); roomParam = code; setTimeout(make, 200); return; }
+          net.status = 'error'; net.error = '部屋を再開できませんでした。新しく部屋を作ってください。'; render(true); return;
+        }
+        if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) { net.status = 'reconnecting'; render(); }
+      });
+    };
+    make();
+    commit();
+    if (G.phase === 'firstpick') scheduleDraw();
+  }
+
+  // ====================================================================
+  // 参加者（子）
+  // ====================================================================
+  function connectAsClient(code) {
+    if (typeof Peer === 'undefined') { net.error = '通信ライブラリを読み込めませんでした。電波の良い場所で再読み込みしてください。'; net.status = 'error'; render(true); return; }
+    net.role = 'client'; net.code = code; net.status = 'connecting'; net.error = ''; net.ever = false;
+    render(true);
+    const peer = new Peer(undefined, { debug: 0 });
+    net.peer = peer;
+    peer.on('open', () => openConn());
+    peer.on('disconnected', () => { setTimeout(() => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) {} }, 1500); });
+    peer.on('error', err => {
+      if (err.type === 'peer-unavailable') {
+        if (!net.ever) { leaveRoom(`部屋「${code}」が見つかりません。コードを確かめてください。`); return; }
+        scheduleRetry(); return;
+      }
+      if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) scheduleRetry();
+    });
+    clearTimeout(net.joinTimer);
+    net.joinTimer = setTimeout(() => { if (!net.ever && net.role === 'client') leaveRoom('部屋につながりませんでした。部屋の親のスマホが開いているか確かめてください。'); }, 15000);
+  }
+  function openConn() {
+    const peer = net.peer;
+    if (!peer || peer.destroyed || !peer.open) { scheduleRetry(); return; }
+    try { if (net.conn) net.conn.close(); } catch (e) {}
+    const conn = peer.connect(HOST_PREFIX + net.code, { reliable: true, serialization: 'json' });
+    net.conn = conn;
+    conn.on('open', () => {
+      net.status = 'online'; net.lastHeard = Date.now();
+      conn.send({ t: 'hello', pid: myPid, name: myName });
+      render();
+    });
+    conn.on('data', m => { if (conn === net.conn) { net.lastHeard = Date.now(); onHostMsg(m); } });
+    conn.on('close', () => { if (conn === net.conn && net.role === 'client') scheduleRetry(); });
+    conn.on('error', () => { if (conn === net.conn && net.role === 'client') scheduleRetry(); });
+  }
+  function scheduleRetry() {
+    if (net.role !== 'client') return;
+    net.status = 'reconnecting'; render();
+    clearTimeout(net.retry);
+    net.retry = setTimeout(() => {
+      if (net.role !== 'client') return;
+      if (net.peer && !net.peer.destroyed && net.peer.open) openConn();
+      else if (net.peer && !net.peer.destroyed) { try { net.peer.reconnect(); } catch (e) {} scheduleRetry(); }
+    }, 2500);
+  }
+  setInterval(() => {
+    if (net.role !== 'client' || net.status !== 'online') return;
+    try { net.conn && net.conn.open && net.conn.send({ t: 'ping' }); } catch (e) {}
+    if (Date.now() - net.lastHeard > 15000) scheduleRetry();
+  }, 4000);
+
+  function send(m) {
+    if (net.role === 'host') hostAction(myPid, m);
+    else if (net.conn && net.conn.open) { try { net.conn.send(m); } catch (e) {} }
+    else toast('通信中です。少し待ってからもう一度押してください');
+  }
+
+  function onHostMsg(m) {
+    if (!m || typeof m !== 'object') return;
+    switch (m.t) {
+      case 'state': {
+        const prev = V;
+        V = m.v;
+        if (!net.ever) { net.ever = true; clearTimeout(net.joinTimer); if (net.role === 'client') SS.set('ejr-room', net.code); }
+        if (!prev || prev.gameNo !== V.gameNo) { U.sel = null; U.pending = null; U.cur = null; remoteLive = null; }
+        if (prev && prev.turn !== V.turn) { U.pending = null; U.cur = null; }
+        if (V.phase === 'draw' && V.order[V.turn % V.players.length] === myPid && V.inGame) {
+          const k = V.gameNo + ':' + V.turn;
+          if (U.lastTurnPing !== k) { U.lastTurnPing = k; FXo.sfx.ping(); try { navigator.vibrate && navigator.vibrate(80); } catch (e) {} }
+        }
+        render();
+        break;
+      }
+      case 'strokes':
+        if (m.from === 0) strokes = [];
+        strokes.splice(m.from, m.list.length, ...m.list);
+        strokes.length = Math.min(strokes.length, m.total);
+        paintAll();
+        break;
+      case 'stroke':
+        if (m.i === strokes.length) strokes.push(m.s);
+        else if (m.i < strokes.length) strokes[m.i] = m.s;
+        else send({ t: 'sync' });
+        if (remoteLive && remoteLive.p === m.s.p) remoteLive = null;
+        paintAll();
+        break;
+      case 'live':
+        remoteLive = m.pts ? { p: m.p, pts: m.pts } : null;
+        schedulePaint();
+        break;
+      case 'adopt':
+        myPid = String(m.pid); SS.set('ejr-pid', myPid);
+        break;
+      case 'reject':
+        leaveRoom(m.reason === 'full' ? 'この部屋は満員です（10人まで）。' : '部屋に入れませんでした。');
+        break;
+    }
+  }
+
+  function leaveRoom(errMsg) {
+    clearTimeout(net.retry); clearTimeout(net.joinTimer);
+    try { net.conn && net.conn.close(); } catch (e) {}
+    try { net.peer && net.peer.destroy(); } catch (e) {}
+    if (net.role === 'host') LS.del('ejr-host');
+    if (!errMsg) SS.del('ejr-room');
+    net.role = null; net.peer = null; net.conn = null; net.status = 'idle'; net.error = errMsg || '';
+    if (!errMsg) roomParam = '';
+    V = null; G = null; strokes = []; remoteLive = null; conns.clear();
+    history.replaceState(null, '', roomParam && errMsg ? '?room=' + roomParam : location.pathname);
+    render(true);
+  }
+
+  // ====================================================================
+  // キャンバス
+  // ====================================================================
+  const colorOf = pid => { const p = V && V.players.find(x => x.pid === pid); return p ? p.color : '#888'; };
+  function paint(canvas) {
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const d = window.devicePixelRatio || 1;
+    const W = Math.round(r.width * d);
+    if (canvas.width !== W || canvas.height !== W) { canvas.width = W; canvas.height = W; }
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fbfaf5'; ctx.fillRect(0, 0, W, W);
+    for (const s of strokes) drawStroke(ctx, W, s.pts, colorOf(s.p));
+    if (V && V.phase === 'draw') {
+      const drawer = V.order[V.turn % V.players.length];
+      if (drawer === myPid) { const mine = U.pending || U.cur; if (mine) drawStroke(ctx, W, mine, colorOf(myPid)); }
+      else if (remoteLive && remoteLive.p === drawer) drawStroke(ctx, W, remoteLive.pts, colorOf(drawer));
+    }
+  }
+  function drawStroke(ctx, W, pts, color) {
+    if (!pts || !pts.length) return;
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = Math.max(2, W * 0.013); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (pts.length === 1) { ctx.beginPath(); ctx.arc(pts[0][0] * W, pts[0][1] * W, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); return; }
+    ctx.beginPath(); ctx.moveTo(pts[0][0] * W, pts[0][1] * W);
+    for (let i = 1; i < pts.length - 1; i++) { const mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2; ctx.quadraticCurveTo(pts[i][0] * W, pts[i][1] * W, mx * W, my * W); }
+    const l = pts[pts.length - 1]; ctx.lineTo(l[0] * W, l[1] * W); ctx.stroke();
+  }
+  function paintAll() { document.querySelectorAll('canvas[data-board]').forEach(paint); }
+  let paintRaf = 0;
+  function schedulePaint() { if (!paintRaf) paintRaf = requestAnimationFrame(() => { paintRaf = 0; paintAll(); }); }
+  window.addEventListener('resize', schedulePaint);
+
+  let liveTimer = 0;
+  function bindLiveCanvas(canvas, onEnd) {
+    const pt = e => {
+      const r = canvas.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      return [Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000];
+    };
+    const add = q => { const a = U.cur; const l = a[a.length - 1]; if (a.length >= 600) return; if (!l || Math.hypot(q[0] - l[0], q[1] - l[1]) >= 0.003) a.push(q); };
+    const pushLive = () => { if (!liveTimer) liveTimer = setTimeout(() => { liveTimer = 0; const s = U.cur || U.pending; if (s) send({ t: 'live', pts: s }); }, 70); };
+    canvas.addEventListener('pointerdown', e => {
+      if (U.pending || U.cur) return;
+      e.preventDefault();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      U.pid = e.pointerId; U.cur = [pt(e)]; schedulePaint(); pushLive();
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!U.cur || e.pointerId !== U.pid) return;
+      e.preventDefault();
+      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      for (const ev of (evs.length ? evs : [e])) add(pt(ev));
+      schedulePaint(); pushLive();
+    });
+    const end = e => {
+      if (!U.cur || e.pointerId !== U.pid) return;
+      U.pending = U.cur; U.cur = null; U.pid = null;
+      clearTimeout(liveTimer); liveTimer = 0; send({ t: 'live', pts: U.pending });
+      schedulePaint(); onEnd();
+    };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+  }
+
+  // ====================================================================
+  // 画面
+  // ====================================================================
+  const P = pid => (V && V.players.find(p => p.pid === pid)) || { pid, name: '?', color: '#888', online: false };
+  const isHostMe = () => V && V.hostPid === myPid;
+  const avatar = (pid, size) => { const p = P(pid); return `<div class="avatar" style="background:${p.color}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px` : ''}">${esc(Array.from(p.name)[0] || '?')}</div>`; };
+  const dot = (pid, lg) => `<span class="dot${lg ? ' dot-lg' : ''}" style="background:${P(pid).color}"></span>`;
+  const inviteUrl = code => location.origin + location.pathname + '?room=' + code;
+
+  function toast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+    document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+  }
+  function sheet(html, actions) {
+    const back = document.createElement('div');
+    back.className = 'sheet-back';
+    back.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    back.querySelectorAll('[data-sheet]').forEach(b => b.addEventListener('click', () => { close(); const f = actions && actions[b.dataset.sheet]; if (f) f(); }));
+    return back;
+  }
+
+  function netBanner() {
+    if (net.status === 'reconnecting') return `<div class="net" role="status">${net.role === 'host' ? 'サーバーとの接続が切れました。つなぎ直しています' : '親のスマホとの接続が切れました。つなぎ直しています'}<span class="dots"></span></div>`;
+    if (net.status === 'connecting' && net.role === 'host') return `<div class="net" role="status">部屋を準備しています…</div>`;
+    return '';
+  }
+  function topbar() {
+    const me = V.players.find(p => p.pid === myPid);
+    return `<div class="topbar">
+      <span class="me">${me ? dot(myPid) : ''}<span>${esc(me ? me.name : myName)}</span></span>
+      <span class="pill">部屋 ${esc(V.code)}</span>
+      <span class="spacer"></span>
+      ${V.role ? '<button class="pill pill-btn" data-act="showRole">役職とお題</button>' : ''}
+      ${FXo.muteButton()}
+    </div><div id="net">${netBanner()}</div>`;
+  }
+
+  function screenKey() {
+    if (!V) return ['home', net.status, net.error, roomParam, net.role].join('|');
+    const base = [V.phase, V.gameNo, V.inGame ? 1 : 0, V.code].join('|');
+    switch (V.phase) {
+      case 'lobby': return base + JSON.stringify([V.players, V.waiting, V.settings, V.hostPid]);
+      case 'roles': return base + '|' + V.ready.includes(myPid);
+      case 'draw': return base + '|' + V.turn;
+      case 'vote': return base + '|' + V.runoff + '|' + (V.myVote != null);
+      case 'reveal': return base + '|' + V.accused;
+      default: return base + '|' + V.runoff;
+    }
+  }
+  function render(force) {
+    const key = screenKey();
+    if (force || key !== U.lastKey) {
+      U.lastKey = key;
+      const sheetOpen = document.querySelector('.sheet-back');
+      if (sheetOpen && !sheetOpen.dataset.keep) sheetOpen.remove();
+      window.scrollTo(0, 0);
+      (VIEWS[V ? V.phase : (net.role ? 'connecting' : 'home')] || VIEWS.home)();
+    } else {
+      const n = document.getElementById('net'); if (n) n.innerHTML = netBanner();
+      const st = document.getElementById('status'); if (st && STATUS[V.phase]) st.innerHTML = STATUS[V.phase]();
+    }
+    schedulePaint();
+  }
+
+  const STATUS = {
+    roles: () => `
+      <div class="status-chips">${V.players.map(p => `<span class="s ${V.ready.includes(p.pid) ? 'done' : ''} ${p.online ? '' : 'off'}">${dot(p.pid)}<span>${esc(p.name)}${V.ready.includes(p.pid) ? ' ✓' : ''}</span></span>`).join('')}</div>
+      ${isHostMe() && V.players.some(p => !p.online && !V.ready.includes(p.pid)) ? '<button class="btn btn-ghost btn-sm btn-block" data-act="force">接続が切れた人を待たずに進める</button>' : ''}`,
+    draw: () => {
+      const cur = V.order[V.turn % V.players.length];
+      return `<div class="order" aria-label="描く順番">${V.order.map(pid => `<span class="o ${pid === cur ? 'now' : ''} ${P(pid).online ? '' : 'off'}">${dot(pid)}<span>${esc(P(pid).name)}</span></span>`).join('')}</div>
+        ${isHostMe() && !P(cur).online ? `<button class="btn btn-ghost btn-sm btn-block" data-act="force">${esc(P(cur).name)}さんの接続が切れています。この番を飛ばす</button>` : ''}`;
+    },
+    vote: () => `
+      <div class="status-chips">${V.players.map(p => `<span class="s ${V.voted.includes(p.pid) ? 'done' : ''} ${p.online ? '' : 'off'}">${dot(p.pid)}<span>${esc(p.name)}${V.voted.includes(p.pid) ? ' 投票済み' : ''}</span></span>`).join('')}</div>
+      ${isHostMe() && V.players.some(p => !p.online && !V.voted.includes(p.pid)) ? '<button class="btn btn-ghost btn-sm btn-block" data-act="force">接続が切れた人を待たずに開票する</button>' : ''}`,
+    lobby: null
+  };
+
+  const VIEWS = {
+    home() {
+      const resumable = (() => { const h = LS.get('ejr-host', null); return h && roomParam && h.code === roomParam && SS.get('ejr-room', null) !== roomParam && Date.now() - h.t < 6 * 3600e3 ? h : null; })();
+      $app.innerHTML = `
+        <header class="brand">
+          <div class="moon" aria-hidden="true"></div>
+          <div class="grow"><h1>絵描き人狼</h1><p>ひとり1筆ずつ。お題を知らない人狼を見つけ出せ。</p></div>
+        </header>
+        <section class="panel">
+          <label class="label" for="name">あなたの名前</label>
+          <input type="text" id="name" maxlength="10" placeholder="例：ゆうと" value="${esc(myName)}" autocomplete="nickname" enterkeyhint="done">
+          ${net.error ? `<p class="err" role="alert">${esc(net.error)}</p>` : ''}
+          ${roomParam
+            ? `<button class="btn btn-primary btn-block" data-act="join">部屋「${esc(roomParam)}」に参加する</button>
+               ${resumable ? '<button class="btn btn-ghost btn-block" data-act="resumeHost">この部屋の親として再開する</button>' : ''}
+               <button class="link" data-act="clearRoom">別の部屋に入る・部屋を作る</button>`
+            : `<button class="btn btn-primary btn-block" data-act="create">部屋を作る</button>
+               <div class="or">招待された人</div>
+               <div class="row"><input type="text" id="code" class="code grow" maxlength="6" placeholder="ABCD" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="部屋コード"><button class="btn btn-ghost" data-act="join">参加</button></div>`}
+        </section>
+        <details class="panel rules">
+          <summary>あそびかた</summary>
+          <ul>
+            <li>1人が「部屋を作る」、他の人は部屋コードかQRコードで参加します。3〜10人で遊べます。</li>
+            <li>人狼は1人（5人以上なら2人）。<b>人狼だけお題を知りません。</b></li>
+            <li>最初に描く人はランダム。順番に<b>1筆ずつ</b>描きます。指を離すまでが1筆です。描いている線はみんなの画面にその場で映ります。</li>
+            <li>全員が3回描くか、誰かが「人狼がわかった」を押したら投票です。</li>
+            <li>最多得票が<b>人狼なら市民の勝ち</b>、<b>市民なら人狼の勝ち</b>。同票なら決選投票。</li>
+            <li>人狼が見つかっても、人狼がお題を当てたら<b>人狼の逆転勝ち</b>。</li>
+          </ul>
+        </details>
+        <div class="row" style="justify-content:space-between">
+          <a class="link" href="local.html">1台のスマホを回して遊ぶ</a>
+          ${FXo.muteButton()}
+        </div>`;
+      const code = $app.querySelector('#code');
+      if (code) code.addEventListener('keydown', e => { if (e.key === 'Enter') ACTS.join(); });
+    },
+    connecting() {
+      $app.innerHTML = `
+        <div class="reveal">
+          <div class="moon" aria-hidden="true"></div>
+          <p class="waitline">部屋「${esc(net.code)}」につないでいます<span class="dots"></span></p>
+          <button class="btn btn-ghost" data-act="leaveNow">やめる</button>
+        </div>`;
+    },
+    lobby() {
+      const host = isHostMe();
+      const n = V.players.length;
+      const url = inviteUrl(V.code);
+      let qrImg = '';
+      try { if (typeof qrcode === 'function') { const q = qrcode(0, 'M'); q.addData(url); q.make(); qrImg = q.createDataURL(6, 0); } } catch (e) {}
+      $app.innerHTML = `
+        ${topbar()}
+        <section class="panel center">
+          <span class="label">部屋コード</span>
+          <div class="code-big">${esc(V.code)}</div>
+          ${qrImg ? `<div class="qr"><img src="${qrImg}" alt="参加用QRコード"></div><p class="muted">カメラで読み取ると参加できます</p>` : ''}
+          <div class="row"><button class="btn btn-ghost btn-sm grow" data-act="share">招待リンクを送る</button><button class="btn btn-ghost btn-sm grow" data-act="copy">リンクをコピー</button></div>
+        </section>
+        <section class="panel">
+          <div class="row"><span class="label grow">参加者</span><span class="pill">${n}人・人狼${n >= 5 ? 2 : 1}人</span></div>
+          <div class="plist">
+            ${V.players.map(p => `<div class="p">${dot(p.pid, true)}<span class="grow">${esc(p.name)}</span>${p.pid === V.hostPid ? '<span class="tag host">親</span>' : ''}${p.pid === myPid ? '<span class="tag you">あなた</span>' : ''}</div>`).join('')}
+          </div>
+          ${n < MIN ? `<p class="muted">あと${MIN - n}人以上集まると始められます。</p>` : ''}
+        </section>
+        <section class="panel">
+          <span class="label">お題のジャンル${host ? '' : '（親が決めます）'}</span>
+          <div class="chips" role="group" aria-label="お題のジャンル">
+            ${['おまかせ', ...CATS].map(c => `<button class="chip" data-act="cat" data-arg="${esc(c)}" aria-pressed="${V.settings.cat === c}" ${host ? '' : 'disabled'}>${esc(c)}</button>`).join('')}
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="showcat" ${V.settings.showCat ? 'checked' : ''} ${host ? '' : 'disabled'}>
+            <span class="track"></span>
+            <span class="grow">人狼にもジャンルだけ教える</span>
+          </label>
+        </section>
+        <div class="sticky-bottom stack">
+          ${host
+            ? `<p class="muted center">あなたのスマホが部屋の親です。ゲーム中は画面を閉じないでください。</p><button class="btn btn-primary btn-block" data-act="start" ${n < MIN ? 'disabled' : ''}>ゲームをはじめる</button>`
+            : `<p class="waitline">${esc(P(V.hostPid).name)}さんがゲームを始めるのを待っています<span class="dots"></span></p>`}
+          <button class="link" data-act="leave">部屋を出る</button>
+        </div>`;
+      const sc = $app.querySelector('#showcat');
+      if (sc) sc.addEventListener('change', () => send({ t: 'settings', showCat: sc.checked }));
+    },
+    roles() {
+      if (!V.inGame) return spectator('役職を確認しています');
+      const ready = V.ready.includes(myPid);
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="stack" style="flex:1;justify-content:center">
+          <p class="label center">あなたの役職（他の人に見せないで）</p>
+          ${roleCard()}
+          ${ready
+            ? `<p class="waitline">みんなの確認を待っています<span class="dots"></span></p>`
+            : '<button class="btn btn-primary btn-block" data-act="ready">覚えた</button>'}
+          <div id="status">${STATUS.roles()}</div>
+        </div>`;
+      const k = V.gameNo;
+      if (U.roleFxFor !== k) { U.roleFxFor = k; FXo.role($app.querySelector('.role-card'), V.role); }
+    },
+    firstpick() {
+      const first = V.order[0];
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="stack" style="padding-top:8px"><p class="label center">全員の確認が終わりました</p><h2 class="center" style="font-size:26px">最初に描く人は…</h2></div>
+        <div class="roulette">${V.players.map(p => `<div class="r" data-r="${esc(p.pid)}">${dot(p.pid, true)}<span>${esc(p.name)}</span></div>`).join('')}</div>
+        <p class="center" id="after" hidden><b>${esc(P(first).name)}</b>さんから、順番に1筆ずつ描きます。</p>`;
+      const rows = [...$app.querySelectorAll('[data-r]')];
+      const hit = pid => rows.forEach(r => r.classList.toggle('hit', r.dataset.r === pid));
+      const done = () => { hit(first); FXo.sfx.pick(); const a = $app.querySelector('#after'); if (a) a.hidden = false; };
+      if (U.rouletteFor === V.gameNo || reduceMotion()) { done(); return; }
+      U.rouletteFor = V.gameNo;
+      const n = V.players.length, firstIdx = V.players.findIndex(p => p.pid === first);
+      const total = n * 2 + firstIdx + 1;
+      let k = 0;
+      const tick = () => {
+        if (!V || V.phase !== 'firstpick') return;
+        hit(V.players[k % n].pid); FXo.sfx.tick(); k++;
+        if (k >= total) { setTimeout(done, 250); return; }
+        setTimeout(tick, 60 + Math.pow(k / total, 3) * 320);
+      };
+      tick();
+    },
+    draw() {
+      const cur = V.order[V.turn % V.players.length];
+      const mine = cur === myPid && V.inGame;
+      const round = Math.floor(V.turn / V.players.length) + 1;
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="turn-bar">
+          ${avatar(cur, 44)}
+          <div class="grow">
+            <div class="who">${mine ? 'あなたの番！' : `${esc(P(cur).name)}さんの番`}</div>
+            <div class="row" style="gap:6px;flex-wrap:wrap">
+              <span class="pill pill-moon">${round} / ${ROUNDS} 周目</span>
+              <span class="pill">手番 ${V.turn + 1} / ${V.total}</span>
+              ${V.topic && V.topic.cat ? `<span class="pill">ジャンル：${esc(V.topic.cat)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="board-wrap"><canvas class="board ${mine ? 'live' : ''}" data-board aria-label="${mine ? 'お絵かきキャンバス。1筆だけ描けます' : 'みんなの絵'}"></canvas></div>
+        <div class="board-hint" id="ctl"></div>
+        <div id="status">${STATUS.draw()}</div>
+        <div class="spacer"></div>
+        ${V.inGame ? '<button class="btn btn-wolf btn-block" data-act="early">人狼がわかった！投票へ</button>' : '<p class="waitline">観戦中です。次のゲームから参加できます。</p>'}`;
+      const ctl = $app.querySelector('#ctl');
+      const upd = () => {
+        if (!mine) { ctl.innerHTML = `<span>${esc(P(cur).name)}さんが描いています<span class="dots"></span></span>`; return; }
+        if (U.pending) {
+          ctl.innerHTML = `<div class="row" style="width:100%"><button class="btn btn-ghost grow" data-act="redo">描き直す</button><button class="btn btn-primary grow" data-act="ok">この1筆で決定</button></div>`;
+        } else {
+          ctl.innerHTML = '<span><b>1筆だけ</b>描いてください。指を離すまでが1筆です。</span>';
+        }
+      };
+      U.updCtl = upd;
+      upd();
+      if (mine) bindLiveCanvas($app.querySelector('canvas.live'), upd);
+    },
+    vote() {
+      const reason = V.runoff ? '同票だったので、決選投票です' : V.voteReason === 'early' ? `${esc(P(V.voteBy).name)}さんが「人狼がわかった」を押しました` : '3周描き終わりました';
+      if (!V.inGame || V.myVote != null) {
+        $app.innerHTML = `
+          ${topbar()}
+          <div class="notice">${reason}</div>
+          <div class="board-wrap"><canvas class="board small" data-board aria-label="みんなの絵"></canvas></div>
+          <p class="waitline">${V.inGame ? '投票しました。みんなを待っています' : '投票中です'}<span class="dots"></span></p>
+          <div id="status">${STATUS.vote()}</div>`;
+        return;
+      }
+      const cands = (V.candidates || V.players.map(p => p.pid)).filter(k => k !== myPid);
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="notice">${reason}</div>
+        <div class="board-wrap"><canvas class="board small" data-board aria-label="みんなの絵"></canvas></div>
+        <p class="label">${V.runoff ? '同票の人から選んでください' : '人狼だと思う人に投票'}</p>
+        <div class="choices" role="radiogroup" aria-label="投票先">
+          ${cands.map(k => `<button class="choice" role="radio" aria-checked="${U.sel === k}" data-act="sel" data-arg="${esc(k)}">${dot(k, true)}<span class="grow">${esc(P(k).name)}</span></button>`).join('')}
+        </div>
+        <div id="status">${STATUS.vote()}</div>
+        <div class="sticky-bottom"><button class="btn btn-primary btn-block" data-act="cast" ${U.sel && cands.includes(U.sel) ? '' : 'disabled'}>この人に投票する</button></div>`;
+    },
+    tally() {
+      const c = V.counts;
+      const cands = V.candidates || V.players.map(p => p.pid);
+      const max = Math.max(...cands.map(k => c[k]));
+      const tops = cands.filter(k => c[k] === max);
+      const tie = tops.length > 1;
+      const sorted = cands.slice().sort((a, b) => c[b] - c[a]);
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="stack" style="padding-top:8px"><p class="label center">${V.runoff ? '決選投票の結果' : '開票'}</p>
+          <h2 class="center" style="font-size:26px">${tie ? (V.runoff ? 'また同票でした' : '同票です') : `最多得票は ${esc(P(tops[0]).name)}さん`}</h2></div>
+        <section class="panel bars">
+          ${sorted.map(k => `<div class="bar-row ${c[k] === max && !tie ? 'top' : ''}"><span class="n">${esc(P(k).name)}</span><span class="bar"><i style="width:${c[k] / V.players.length * 100}%"></i></span><span class="c">${c[k]}</span></div>`).join('')}
+        </section>
+        <div class="spacer"></div>
+        ${tie && !V.runoff ? `<p class="center muted">${tops.map(k => esc(P(k).name)).join('、')}さんで決選投票をします。</p>` : ''}
+        ${tie && V.runoff ? '<p class="center muted">人狼を1人に絞れませんでした。</p>' : ''}
+        ${V.inGame ? `<button class="btn btn-primary btn-block" data-act="next">${tie ? (V.runoff ? '結果を見る' : '決選投票へ') : `${esc(P(tops[0]).name)}さんの正体を見る`}</button><p class="muted center">誰か1人が押すと全員の画面が進みます</p>` : ''}`;
+    },
+    reveal() {
+      const a = V.accused, role = V.accusedRole;
+      const key = V.gameNo + ':' + a + ':' + V.runoff;
+      const already = U.revealFor === key;
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="reveal">
+          ${avatar(a, 88)}
+          <p style="font-size:20px"><b>${esc(P(a).name)}</b>さんの正体は…</p>
+          <div class="big ${role}" id="bigrole" ${already ? '' : 'hidden'}>${role === 'wolf' ? '人狼' : '市民'}</div>
+          <div class="stack" id="after" style="width:100%" ${already ? '' : 'hidden'}>
+            ${role === 'wolf' ? '<p>人狼を見つけました！<br>でも、人狼が<b>お題を当てたら逆転勝ち</b>です。</p>' : '<p>市民を選んでしまいました…</p>'}
+            ${V.inGame ? `<button class="btn btn-primary btn-block" data-act="next">${role === 'wolf' ? '人狼の回答へ' : '結果を見る'}</button>` : ''}
+          </div>
+        </div>`;
+      if (already) return;
+      U.revealFor = key;
+      FXo.suspense().then(() => {
+        const big = document.getElementById('bigrole'), after = document.getElementById('after');
+        if (!big || U.revealFor !== key) return;
+        big.hidden = false; FXo.reveal(role, big);
+        setTimeout(() => { if (after) after.hidden = false; }, 700);
+      });
+    },
+    guess() {
+      const a = V.accused;
+      if (a !== myPid) {
+        $app.innerHTML = `
+          ${topbar()}
+          <div class="turn-bar">${avatar(a, 44)}<div class="grow"><div class="who">${esc(P(a).name)}さんの逆転チャンス</div><p class="muted">人狼がお題を考えています。ヒントは言わないでください。</p></div></div>
+          <div class="board-wrap"><canvas class="board small" data-board aria-label="みんなの絵"></canvas></div>
+          <p class="waitline">回答を待っています<span class="dots"></span></p>`;
+        return;
+      }
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="turn-bar">${avatar(a, 44)}<div class="grow"><div class="who">逆転のチャンス！</div><p class="muted">お題はなんだったと思う？ 当てれば人狼の勝ちです。</p></div></div>
+        <div class="board-wrap"><canvas class="board small" data-board aria-label="みんなの絵"></canvas></div>
+        ${V.topic && V.topic.cat ? `<p class="center muted">ジャンル：${esc(V.topic.cat)}</p>` : ''}
+        <form id="f" class="stack">
+          <input type="text" id="guess-input" maxlength="20" placeholder="お題を入力" autocomplete="off" enterkeyhint="done">
+          <button class="btn btn-primary btn-block" id="go" type="submit" disabled>この答えで勝負する</button>
+        </form>`;
+      const inp = $app.querySelector('#guess-input'), go = $app.querySelector('#go');
+      inp.addEventListener('input', () => { go.disabled = !inp.value.trim(); });
+      $app.querySelector('#f').addEventListener('submit', e => { e.preventDefault(); if (inp.value.trim()) { go.disabled = true; send({ t: 'guess', text: inp.value.trim() }); } });
+    },
+    judge() {
+      const ok = V.guessOk;
+      const canJudge = V.inGame && V.role === 'village';
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="stack" style="padding-top:8px"><p class="label center">答え合わせ</p></div>
+        <div class="guess-compare">
+          <div><p class="muted">${esc(P(V.accused).name)}さんの答え</p><div class="v">${esc(V.guess)}</div></div>
+          <div><p class="muted">お題</p><div class="v">${esc(V.topic ? V.topic.word : '')}</div></div>
+        </div>
+        <div class="reveal" style="flex:0;padding-block:12px"><div class="big ${ok ? 'wolf' : 'village'}" id="verdict" style="font-size:44px">${ok ? '正解！' : '不正解'}</div></div>
+        <div class="spacer"></div>
+        ${ok
+          ? (V.inGame ? '<button class="btn btn-primary btn-block" data-act="next">結果を見る</button>' : '')
+          : canJudge
+            ? `<p class="center muted">言い方が違うだけで同じものなら、市民で相談して正解にできます。</p>
+               <div class="stack"><button class="btn btn-primary btn-block" data-act="judge" data-arg="0">不正解で確定（市民の勝ち）</button>
+               <button class="btn btn-ghost btn-block" data-act="judge" data-arg="1">正解にする（人狼の勝ち）</button></div>`
+            : '<p class="waitline">市民が判定しています<span class="dots"></span></p>'}`;
+      const key = 'j' + V.gameNo;
+      if (U.judgeFor !== key) { U.judgeFor = key; const el = document.getElementById('verdict'); if (el) el.classList.add('fx-slam'); ok ? FXo.sfx.slash() : FXo.sfx.chime(); }
+    },
+    end() {
+      const wolfWin = V.winner === 'wolf';
+      const c = V.counts || {};
+      $app.innerHTML = `
+        ${topbar()}
+        <div class="banner ${wolfWin ? 'wolf' : 'village'}">
+          <div class="win" id="wintext">${wolfWin ? '人狼の勝ち' : '市民の勝ち'}</div>
+          <p>${esc(V.reason)}</p>
+          ${V.inGame && V.role ? `<p class="muted">${(V.role === 'wolf') === wolfWin ? 'あなたのチームの勝ちです！' : 'あなたのチームの負けです'}</p>` : ''}
+        </div>
+        <div class="topic center"><div class="t-cat">お題（${esc(V.topic ? V.topic.cat : '')}）</div><div class="t-word">${esc(V.topic ? V.topic.word : '')}</div></div>
+        <div class="board-wrap"><canvas class="board small" data-board aria-label="完成した絵"></canvas></div>
+        <section class="panel">
+          <span class="label">線の色と正体</span>
+          <div class="legend">
+            ${V.players.map(p => `<div class="l">${dot(p.pid, true)}<span class="grow">${esc(p.name)}</span><span class="votes-got">${c[p.pid] != null ? c[p.pid] + '票' : ''}</span><span class="tag ${V.wolves.includes(p.pid) ? 'wolf' : 'village'}">${V.wolves.includes(p.pid) ? '人狼' : '市民'}</span></div>`).join('')}
+          </div>
+          ${V.firstVotesUsed ? '<p class="muted">票数は最初の投票のものです。</p>' : ''}
+        </section>
+        <div class="stack">
+          ${isHostMe()
+            ? `<button class="btn btn-primary btn-block" data-act="start">同じメンバーでもう一度</button><button class="btn btn-ghost btn-block" data-act="toLobby">ロビーに戻る（メンバーを入れ替える）</button>`
+            : `<p class="waitline">${esc(P(V.hostPid).name)}さんが次のゲームを始めるのを待っています<span class="dots"></span></p>`}
+          <button class="link" data-act="leave">部屋を出る</button>
+        </div>`;
+      const key = 'w' + V.gameNo;
+      if (U.winFor !== key) { U.winFor = key; const el = document.getElementById('wintext'); if (el) el.classList.add('fx-slam'); FXo.win(V.winner); }
+    }
+  };
+  function roleCard() {
+    const wolf = V.role === 'wolf';
+    const mates = V.mates.map(pid => P(pid).name);
+    return `<div class="role-card ${wolf ? 'wolf' : 'village'}">
+      <div class="role-name">${wolf ? '人狼' : '市民'}</div>
+      ${wolf
+        ? `<p>あなたは人狼です。<b>お題は知らされていません。</b><br>みんなの絵から推理して、バレないように描きましょう。</p>
+           ${V.topic && V.topic.cat ? `<div class="topic"><div class="t-cat">ジャンルだけわかります</div><div class="t-word">${esc(V.topic.cat)}</div></div>` : ''}
+           ${mates.length ? `<p class="muted">もう1人の人狼：<b style="color:var(--ink)">${mates.map(esc).join('、')}</b></p>` : ''}`
+        : `<p>お題を描いて、人狼を見つけ出しましょう。<br>描きすぎると人狼にお題がバレます。</p>
+           <div class="topic"><div class="t-cat">お題（${esc(V.topic.cat)}）</div><div class="t-word">${esc(V.topic.word)}</div></div>`}
+    </div>`;
+  }
+  function spectator(msg) {
+    $app.innerHTML = `${topbar()}<div class="reveal"><p class="waitline">${msg}<span class="dots"></span></p><p class="muted">ゲームの途中なので、次のゲームから参加できます。</p></div>`;
+  }
+
+  // ====================================================================
+  // 操作
+  // ====================================================================
+  function takeName() {
+    const el = document.getElementById('name');
+    const v = cleanName(el ? el.value : myName);
+    if (!v) { net.error = '名前を入れてください'; render(true); const e2 = document.getElementById('name'); if (e2) e2.focus(); return null; }
+    myName = v; LS.set('ejr-name', v); net.error = '';
+    return v;
+  }
+  function wake() { try { if (navigator.wakeLock && !wake.lock) navigator.wakeLock.request('screen').then(l => { wake.lock = l; l.addEventListener('release', () => { wake.lock = null; }); }).catch(() => {}); } catch (e) {} }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && net.role) wake(); });
+
+  const ACTS = {
+    create() {
+      if (!takeName()) return;
+      const code = genCode();
+      roomParam = code; history.replaceState(null, '', '?room=' + code);
+      LS.del('ejr-host');
+      hostInit(code); wake(); startHost(code, false);
+    },
+    join() {
+      if (!takeName()) return;
+      const codeEl = document.getElementById('code');
+      const code = cleanCode(codeEl ? codeEl.value : roomParam);
+      if (code.length < 4) { net.error = '4文字の部屋コードを入れてください'; render(true); return; }
+      roomParam = code; history.replaceState(null, '', '?room=' + code);
+      wake(); connectAsClient(code);
+    },
+    resumeHost() {
+      const h = LS.get('ejr-host', null);
+      if (!h || h.code !== roomParam) return;
+      if (!takeName()) return;
+      myPid = h.hostPid; SS.set('ejr-pid', myPid);
+      G = h.G; wake(); startHost(h.code, true);
+    },
+    clearRoom() { roomParam = ''; net.error = ''; history.replaceState(null, '', location.pathname); render(true); },
+    leaveNow() { leaveRoom(); },
+    leave() {
+      sheet(`<h2>部屋を出ますか？</h2><p class="muted">${isHostMe() ? 'あなたは部屋の親です。出ると部屋がなくなり、全員のゲームが終わります。' : 'ゲームの途中で出ると、自分の番が飛ばされることがあります。'}</p>
+        <div class="row"><button class="btn btn-ghost grow" data-sheet="no">戻る</button><button class="btn btn-wolf grow" data-sheet="yes">部屋を出る</button></div>`, { yes: () => leaveRoom() });
+    },
+    async share() {
+      const url = inviteUrl(V.code);
+      if (navigator.share) { try { await navigator.share({ title: '絵描き人狼', text: `絵描き人狼で遊ぼう！ 部屋コード ${V.code}`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      ACTS.copy();
+    },
+    async copy() {
+      const url = inviteUrl(V.code);
+      try { await navigator.clipboard.writeText(url); toast('招待リンクをコピーしました'); }
+      catch (e) { sheet(`<h2>招待リンク</h2><input type="text" readonly value="${esc(url)}" onfocus="this.select()"><button class="btn btn-primary" data-sheet="ok">閉じる</button>`); }
+    },
+    cat(arg) { send({ t: 'settings', cat: arg }); },
+    start() { send({ t: 'start' }); },
+    toLobby() { send({ t: 'lobby' }); },
+    ready() { send({ t: 'ready' }); },
+    force() { send({ t: 'force' }); },
+    showRole() {
+      if (!V || !V.role) return;
+      sheet(`<p class="label center">あなたの役職（他の人に見せないで）</p>${roleCard()}<button class="btn btn-primary" data-sheet="ok">閉じる</button>`);
+    },
+    redo() { U.pending = null; send({ t: 'live', pts: null }); U.updCtl && U.updCtl(); schedulePaint(); },
+    ok() { if (!U.pending) return; send({ t: 'stroke', pts: U.pending, turn: V.turn }); const c = document.getElementById('ctl'); if (c) c.innerHTML = '<span>送信しました</span>'; },
+    early() {
+      sheet(`<h2>投票に進みますか？</h2><p class="muted">全員の描く番が終わり、いまの絵で投票になります。</p>
+        <div class="row"><button class="btn btn-ghost grow" data-sheet="no">描き続ける</button><button class="btn btn-primary grow" data-sheet="yes">投票へ</button></div>`, { yes: () => send({ t: 'early' }) });
+    },
+    sel(arg) {
+      U.sel = arg; FXo.sfx.tick();
+      $app.querySelectorAll('[data-act="sel"]').forEach(x => x.setAttribute('aria-checked', String(x.dataset.arg === arg)));
+      const c = $app.querySelector('[data-act="cast"]'); if (c) c.disabled = false;
+    },
+    cast() { if (!U.sel) return; FXo.sfx.vote(); send({ t: 'vote', target: U.sel }); },
+    next() { send({ t: 'next' }); },
+    judge(arg) { send({ t: 'judge', ok: arg === '1' }); }
+  };
+  $app.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    const f = ACTS[b.dataset.act];
+    if (f) { e.preventDefault(); f(b.dataset.arg, b); }
+  });
+
+  // 起動：親だったタブを再読み込みしたら、親として自動で再開
+  (function boot() {
+    const h = LS.get('ejr-host', null);
+    if (roomParam && h && h.code === roomParam && h.hostPid === myPid && Date.now() - h.t < 6 * 3600e3) {
+      G = h.G; startHost(h.code, true); return;
+    }
+    if (roomParam && myName && SS.get('ejr-room', null) === roomParam) { wake(); connectAsClient(roomParam); return; }
+    render(true);
+  })();
+})();
+</script>
+</body>
+</html>
