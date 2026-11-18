@@ -180,6 +180,7 @@ details.rules b { color: var(--ink); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="topics.js"></script>
 <script src="fx.js"></script>
 </head>
 <body>
@@ -189,16 +190,8 @@ details.rules b { color: var(--ink); }
   'use strict';
   const COLORS = ['#e5484d', '#2f6fde', '#1f9d55', '#e08a00', '#8e4ec6', '#d6409f', '#0b9ab0', '#8a6232', '#4a4f6a', '#c2410c'];
   const MIN = 3, MAX = 10, ROUNDS = 3;
-  const TOPICS = {
-    '動物': [['ねこ','猫','ネコ'],['いぬ','犬','イヌ'],['ぞう','象','ゾウ'],['きりん','キリン'],['ペンギン'],['うさぎ','ウサギ','兎'],['ライオン'],['かめ','亀','カメ'],['パンダ'],['タコ','たこ','蛸'],['へび','蛇','ヘビ'],['くじら','鯨','クジラ'],['カニ','かに','蟹'],['フクロウ','ふくろう'],['ワニ','わに']],
-    '食べ物': [['りんご','リンゴ','林檎'],['バナナ'],['ラーメン'],['おにぎり'],['すし','寿司','お寿司','おすし'],['ケーキ'],['ハンバーガー'],['ピザ'],['ソフトクリーム'],['たこ焼き','たこやき'],['ぶどう','ブドウ','葡萄'],['スイカ','すいか','西瓜'],['ドーナツ'],['エビフライ','えびふらい'],['目玉焼き','めだまやき']],
-    '乗り物': [['自転車','じてんしゃ'],['新幹線','しんかんせん'],['飛行機','ひこうき'],['船','ふね'],['ヘリコプター','ヘリ'],['バス'],['ロケット'],['消防車','しょうぼうしゃ'],['気球','ききゅう'],['スケートボード','スケボー'],['電車','でんしゃ'],['パトカー']],
-    '道具': [['はさみ','ハサミ','鋏'],['かさ','傘','カサ'],['めがね','眼鏡','メガネ'],['えんぴつ','鉛筆'],['時計','とけい'],['スマホ','スマートフォン'],['かぎ','鍵','カギ'],['ハンガー'],['歯ブラシ','はぶらし'],['ほうき','箒'],['フライパン'],['カメラ'],['電球','でんきゅう'],['ギター']],
-    '場所・建物': [['東京タワー','とうきょうたわー'],['お城','おしろ','城'],['学校','がっこう'],['富士山','ふじさん'],['観覧車','かんらんしゃ'],['灯台','とうだい'],['神社','じんじゃ'],['すべり台','すべりだい','滑り台'],['ピラミッド'],['コンビニ'],['温泉','おんせん'],['病院','びょういん']],
-    'スポーツ': [['サッカー'],['野球','やきゅう'],['テニス'],['ボウリング'],['スキー'],['相撲','すもう'],['バスケットボール','バスケ'],['卓球','たっきゅう'],['ゴルフ'],['水泳','すいえい'],['柔道','じゅうどう'],['ボクシング']],
-    '自然': [['太陽','たいよう'],['虹','にじ'],['雪だるま','ゆきだるま'],['火山','かざん'],['雷','かみなり'],['ひまわり','ヒマワリ','向日葵'],['月','つき'],['星','ほし'],['サボテン'],['きのこ','キノコ'],['竜巻','たつまき'],['さくら','桜','サクラ']]
-  };
-  const CATS = Object.keys(TOPICS);
+  const TP = window.EJR_TOPICS;
+  const CATS = TP.cats;
   const HOST_PREFIX = 'ejr-oekakijinro-v1-';
   const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const FXo = window.FX || { role() {}, suspense: () => Promise.resolve(), reveal() {}, win() {}, muteButton: () => '', sfx: new Proxy({}, { get: () => () => {} }) };
@@ -245,7 +238,7 @@ details.rules b { color: var(--ink); }
   const nameOf = pid => { const p = G.players.find(x => x.pid === pid) || G.waiting.find(x => x.pid === pid); return p ? p.name : '?'; };
 
   function hostInit(code) {
-    G = Object.assign({ code, gameNo: 0, phase: 'lobby', hostPid: myPid, players: [{ pid: myPid, name: myName }], waiting: [], settings: { cat: 'おまかせ', showCat: true }, lastWord: null }, blankGame());
+    G = Object.assign({ code, gameNo: 0, phase: 'lobby', hostPid: myPid, players: [{ pid: myPid, name: myName }], waiting: [], settings: { cat: 'おまかせ', showCat: true }, recent: [] }, blankGame());
   }
   function uniqueName(name, pid) {
     const taken = new Set(G.players.concat(G.waiting).filter(p => p.pid !== pid).map(p => p.name));
@@ -312,12 +305,8 @@ details.rules b { color: var(--ink); }
     const n = G.players.length;
     G.gameNo++;
     G.wolves = shuffle(G.players.map(p => p.pid)).slice(0, n >= 5 ? 2 : 1);
-    const cat = G.settings.cat === 'おまかせ' ? CATS[rand(CATS.length)] : G.settings.cat;
-    const list = TOPICS[cat];
-    let entry = list[rand(list.length)];
-    if (entry[0] === G.lastWord && list.length > 1) entry = list[(list.indexOf(entry) + 1) % list.length];
-    G.lastWord = entry[0];
-    G.topic = { cat, word: entry[0], alias: entry.slice(1) };
+    G.topic = TP.pick(G.settings.cat, G.recent);
+    G.recent = TP.remember(G.recent, G.topic.word);
     const first = rand(n);
     G.order = G.players.map((_, k) => G.players[(first + k) % n].pid);
     G.phase = 'roles';
