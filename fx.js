@@ -73,8 +73,35 @@
 .fx-wolf .w-moon{opacity:0;animation:fxIn 1.2s .1s ease forwards}
 .fx-wolf .w-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,#000000cc 100%)}
 .fx-wolf .fx-flash{animation-delay:1.3s}
+.fx-vil{position:absolute;inset:0;pointer-events:auto;overflow:hidden;opacity:0;animation:fxIn .25s ease forwards;
+  background:linear-gradient(#050a22 0,#0b1640 45%,#14214f 70%,#1b2a5c 100%)}
+.fx-vil .v-dawn{position:absolute;inset:0;opacity:0;animation:fxIn 1.1s 1s ease forwards;
+  background:linear-gradient(#0d2357 0,#2c5aa0 30%,#f2a35e 58%,#ffd88a 66%,#2a2f52 100%)}
+.fx-vil.gold .v-dawn{background:linear-gradient(#1a4a8a 0,#4f8fd6 28%,#ffc16b 56%,#fff0b8 66%,#3a3458 100%)}
+.fx-vil>svg{position:absolute;left:50%;top:50%;width:min(132vmin,860px);height:min(132vmin,860px);transform:translate(-50%,-40%)}
+.fx-vil .v-ground{position:absolute;left:0;right:0;bottom:0;top:calc(50% + min(79.2vmin,516px) - 3px);background:#04060d}
+.fx-vil .fx-rays{top:53%;animation-delay:0s,1.05s;opacity:0}
+.fx-vil .v-sun{transform-box:fill-box;transform-origin:50% 50%;opacity:0;animation:fxVSun 1.1s .85s cubic-bezier(.2,.8,.2,1) forwards,fxVPulse 2.2s 2s ease-in-out infinite}
+@keyframes fxVSun{0%{opacity:0;transform:translateY(55%) scale(.7)}100%{opacity:1;transform:none}}
+@keyframes fxVPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.fx-vil .v-win{opacity:0;animation:fxIn .25s ease forwards}
+.fx-vil .v-crowd{transform-box:fill-box;transform-origin:50% 100%;opacity:0;animation:fxVCrowd .8s .35s cubic-bezier(.2,.9,.25,1.1) forwards}
+@keyframes fxVCrowd{0%{opacity:0;transform:translateY(40%)}100%{opacity:1;transform:none}}
+.fx-vil .v-raise{transform-box:fill-box;transform-origin:50% 100%;animation:fxVRaise .5s 1.05s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes fxVRaise{0%{transform:translateY(14%)}100%{transform:none}}
+.fx-vil .v-flame{transform-box:fill-box;transform-origin:50% 100%;opacity:0;animation:fxVIgnite .35s ease-out forwards,fxVFlick .18s ease-in-out infinite alternate}
+@keyframes fxVIgnite{0%{opacity:0;transform:scale(.1)}70%{opacity:1;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
+@keyframes fxVFlick{from{transform:scale(1,1) skewX(-3deg)}to{transform:scale(.92,1.08) skewX(3deg)}}
+.fx-vil .v-bell{transform-box:fill-box;transform-origin:50% 0;animation:fxVBell .9s 1.05s ease-in-out infinite}
+@keyframes fxVBell{0%,100%{transform:rotate(0)}25%{transform:rotate(22deg)}75%{transform:rotate(-22deg)}}
+.fx-vil .v-mill{transform-box:fill-box;transform-origin:50% 50%;animation:fxSpin 6s linear infinite}
+.fx-vil .v-ring{position:absolute;left:50%;top:52%;width:30vmin;height:30vmin;margin:-15vmin 0 0 -15vmin;border-radius:50%;border:3px solid #fff3c4;box-shadow:0 0 30px #ffd76a,inset 0 0 30px #ffd76a;opacity:0;animation:fxVRing 1.1s 1.05s ease-out forwards}
+@keyframes fxVRing{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(5)}}
+.fx-vil .fx-flash{animation-delay:1.05s}
+.fx-vil .w-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 50%,#00000088 100%)}
 @media (prefers-reduced-motion: reduce){.fx-flip,.fx-slam,.fx-shake,.fx-glow-wolf,.fx-glow-village{animation:none!important}
-  .fx-wolf .w-face,.fx-wolf .w-eyes,.fx-wolf .w-hand,.fx-wolf .w-sway,.fx-wolf .w-moon{animation:none!important;opacity:1!important}}
+  .fx-wolf .w-face,.fx-wolf .w-eyes,.fx-wolf .w-hand,.fx-wolf .w-sway,.fx-wolf .w-moon{animation:none!important;opacity:1!important}
+  .fx-vil .v-dawn,.fx-vil .v-sun,.fx-vil .v-win,.fx-vil .v-crowd,.fx-vil .v-raise,.fx-vil .v-flame,.fx-vil .v-bell,.fx-vil .v-mill{animation:none!important;opacity:1!important}.fx-vil .v-ring,.fx-vil .fx-rays{display:none}}
 `;
   const style = document.createElement('style');
   style.textContent = CSS;
@@ -169,6 +196,15 @@
       tone(a, { f0: 90, f1: 38, dur: .7, vol: .45, filter: 260 });
       noise(a, { dur: .45, vol: .12, from: 300, to: 3000 });
       [784, 1175].forEach((f, i) => tone(a, { type: 'triangle', f0: f, t0: .18 + i * .06, dur: .6, vol: .05 }));
+    },
+    /** 村の鐘（市民の大きな演出用） */
+    bell() {
+      const a = audio(); if (!a) return;
+      [0, .55].forEach((t0, k) => {
+        const base = k ? 392 : 523;
+        [[.5, .22], [1, .2], [1.19, .09], [1.56, .07], [2, .06], [2.74, .04]].forEach(([r, v]) =>
+          tone(a, { f0: base * r, t0, dur: 2.2 - r * .3, vol: v * .9, attack: .004 }));
+      });
     },
     growl() {
       const a = audio(); if (!a) return;
@@ -430,6 +466,99 @@ ${moonEl}
     wolfCache[moon] = svg;
     return svg;
   }
+  // ---------- 市民の場面（夜明けの村と、松明を掲げる村人たち） ----------
+  let vilCache = {};
+  function villageArt() {
+    if (vilCache.svg) return vilCache.svg;
+    const rnd = seeded(11), rr = (a, b) => a + rnd() * (b - a);
+    // 村の家並み（中景）
+    const houses = [[-300, 60, 150], [-245, 50, 132], [-196, 70, 150], [-120, 46, 140], [70, 56, 142], [128, 62, 128], [190, 52, 146], [246, 60, 136]];
+    let town = '', wins = '', wi = 0;
+    houses.forEach(([x, w, top]) => {
+      const roof = top - w * .55;
+      town += `M${x} 230L${x} ${top}L${x + w / 2} ${f1(roof)}L${x + w} ${top}L${x + w} 230Z`;
+      if (rnd() < .5) town += `M${f1(x + w * .7)} ${f1(top - w * .3)}h7v-20h-7Z`;
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) {
+        if (rnd() < .3) continue;
+        const wx = x + w * (.22 + c * .38), wy = top + 14 + r * 26;
+        wins += `<rect class="v-win" x="${f1(wx)}" y="${f1(wy)}" width="9" height="12" rx="1.5" style="animation-delay:${f1(.25 + (wi++ % 9) * .09)}s"/>`;
+      }
+    });
+    // 鐘楼（中央）と風車（右）
+    const tower = 'M-34 230L-34 -10L-46 -10L0 -96L46 -10L34 -10L34 230Z';
+    const towerWin = 'M-18 -2h36v40h-36Z';
+    // 前景の村人たち：[x, 頭のy, 体の大きさ, 持ち物]
+    const people = [[-262, 196, 1.15, 'torch'], [-188, 214, 1, 'fork'], [-112, 190, 1.2, 'fist'], [-30, 206, 1.05, 'torch'], [52, 188, 1.25, 'fork'], [132, 210, 1, 'torch'], [206, 194, 1.15, 'fist'], [276, 214, 1, 'torch']];
+    let crowd = '', props = '', flames = '', glows = '', fi = 0;
+    people.forEach(([x, hy, k, item], i) => {
+      const hr = 21 * k;
+      crowd += `M${f1(x - 62 * k)} 330C${f1(x - 60 * k)} ${f1(hy + 52 * k)} ${f1(x - 40 * k)} ${f1(hy + 30 * k)} ${f1(x)} ${f1(hy + 30 * k)}C${f1(x + 40 * k)} ${f1(hy + 30 * k)} ${f1(x + 60 * k)} ${f1(hy + 52 * k)} ${f1(x + 62 * k)} 330Z`;
+      crowd += `M${f1(x + hr)} ${hy}a${f1(hr)} ${f1(hr * 1.12)} 0 1 1 ${f1(-2 * hr)} 0a${f1(hr)} ${f1(hr * 1.12)} 0 1 1 ${f1(2 * hr)} 0Z`;
+      const side = i % 2 ? 1 : -1, sx = x + side * 40 * k, sy = hy + 44 * k;
+      const hx = x + side * 52 * k, hyy = hy - 70 * k;          // 掲げた手
+      crowd += `M${f1(sx - 9 * k)} ${f1(sy)}Q${f1((sx + hx) / 2 - side * 10 * k)} ${f1((sy + hyy) / 2)} ${f1(hx - 5 * k)} ${f1(hyy + 10)}L${f1(hx + 6 * k)} ${f1(hyy + 8)}Q${f1((sx + hx) / 2 - side * 4 * k)} ${f1((sy + hyy) / 2)} ${f1(sx + 11 * k)} ${f1(sy + 8)}Z`;
+      crowd += `M${f1(hx + 8 * k)} ${f1(hyy + 2)}a${f1(8 * k)} ${f1(9 * k)} 0 1 1 ${f1(-16 * k)} 0a${f1(8 * k)} ${f1(9 * k)} 0 1 1 ${f1(16 * k)} 0Z`;
+      if (item === 'torch') {
+        const tx = hx + side * 4, ty = hyy - 70 * k;
+        props += `M${f1(hx - 3)} ${f1(hyy + 30)}L${f1(tx - 3)} ${f1(ty)}L${f1(tx + 4)} ${f1(ty)}L${f1(hx + 4)} ${f1(hyy + 30)}Z`;
+        props += `M${f1(tx - 8)} ${f1(ty + 6)}h16v-12h-16Z`;
+        const fh = 64 * k, fw = 20 * k;
+        flames += `<g class="v-flame" style="animation-delay:${f1(.7 + fi * .1)}s,${f1(.7 + fi * .1 + rr(0, .2))}s"><path d="M${f1(tx)} ${f1(ty - 6)}C${f1(tx - fw * 1.4)} ${f1(ty - fh * .4)} ${f1(tx - fw * .2)} ${f1(ty - fh * .7)} ${f1(tx + fw * .1)} ${f1(ty - fh)}C${f1(tx + fw * .4)} ${f1(ty - fh * .6)} ${f1(tx + fw * 1.5)} ${f1(ty - fh * .45)} ${f1(tx)} ${f1(ty - 6)}Z" fill="url(#vFlame)"/><path d="M${f1(tx)} ${f1(ty - 8)}C${f1(tx - fw * .6)} ${f1(ty - fh * .3)} ${f1(tx)} ${f1(ty - fh * .5)} ${f1(tx + fw * .1)} ${f1(ty - fh * .62)}C${f1(tx + fw * .5)} ${f1(ty - fh * .35)} ${f1(tx + fw * .5)} ${f1(ty - fh * .25)} ${f1(tx)} ${f1(ty - 8)}Z" fill="#fff6c8"/></g>`;
+        glows += `<circle cx="${f1(tx)}" cy="${f1(ty - fh * .45)}" r="${f1(60 * k)}" fill="url(#vGlow)" class="v-flame" style="animation-delay:${f1(.7 + fi * .1)}s,0s"/>`;
+        fi++;
+      } else if (item === 'fork') {
+        const tx = hx + side * 6, ty = hyy - 96 * k;
+        props += `M${f1(hx - 3)} ${f1(hyy + 34)}L${f1(tx - 2.5)} ${f1(ty + 22)}L${f1(tx + 3.5)} ${f1(ty + 22)}L${f1(hx + 4)} ${f1(hyy + 34)}Z`;
+        props += `M${f1(tx - 20)} ${f1(ty + 24)}Q${f1(tx)} ${f1(ty + 34)} ${f1(tx + 21)} ${f1(ty + 24)}L${f1(tx + 21)} ${f1(ty)}L${f1(tx + 17)} ${f1(ty)}L${f1(tx + 17)} ${f1(ty + 20)}Q${f1(tx)} ${f1(ty + 28)} ${f1(tx - 16)} ${f1(ty + 20)}L${f1(tx - 16)} ${f1(ty)}L${f1(tx - 20)} ${f1(ty)}Z`;
+        props += `M${f1(tx - 2)} ${f1(ty + 26)}L${f1(tx - 2)} ${f1(ty - 4)}L${f1(tx + 2)} ${f1(ty - 4)}L${f1(tx + 2)} ${f1(ty + 26)}Z`;
+      }
+    });
+    const svg = `<svg viewBox="-300 -300 600 600" aria-hidden="true">
+<defs>
+ <radialGradient id="vSun"><stop offset="0" stop-color="#fffef2"/><stop offset=".3" stop-color="#fff3b0"/><stop offset=".55" stop-color="#ffc85a" stop-opacity=".85"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient>
+ <radialGradient id="vGlow"><stop offset="0" stop-color="#ffd27a" stop-opacity=".55"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient>
+ <linearGradient id="vFlame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".45" stop-color="#ff9b2e"/><stop offset="1" stop-color="#e2361c"/></linearGradient>
+ <linearGradient id="vTown" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2b5c"/><stop offset="1" stop-color="#0c1230"/></linearGradient>
+ <linearGradient id="vBell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2b0"/><stop offset=".5" stop-color="#e2a92c"/><stop offset="1" stop-color="#8a5a10"/></linearGradient>
+</defs>
+<circle class="v-sun" cx="0" cy="40" r="190" fill="url(#vSun)"/>
+<path d="M-300 150Q-200 112 -90 138T120 128T300 140L300 240L-300 240Z" fill="#16224e" opacity=".9"/>
+<g class="v-mill"><path d="M182 32L186 -46L194 -46L198 32ZM190 32L268 36L268 44L190 40ZM190 32L194 110L186 110L182 32ZM190 32L112 28L112 20L190 24Z" fill="#101a40"/></g>
+<path d="M174 230L180 40L200 40L206 230Z" fill="url(#vTown)"/>
+<path d="${town}" fill="url(#vTown)"/>
+<path d="${tower}" fill="url(#vTown)"/>
+<path d="${towerWin}" fill="#ffd27a" opacity=".35"/>
+<g class="v-bell"><path d="M-1 0h2v6h-2Z" fill="#8a5a10"/><path d="M-13 30C-13 14 -9 6 0 6C9 6 13 14 13 30L16 34L-16 34Z" fill="url(#vBell)"/><circle cx="0" cy="36" r="3.5" fill="#8a5a10"/></g>
+<g fill="#ffd27a">${wins}</g>
+${glows}
+<g class="v-crowd">
+ <g class="v-raise"><path d="${props}" fill="#ffcf7a" opacity=".45" transform="translate(1.5 0)"/><path d="${props}" fill="#05070f"/>${flames}</g>
+ <path d="${crowd}" fill="#ffcf7a" opacity=".55" transform="translate(0 -2.5)"/>
+ <path d="${crowd}" fill="#04060d"/>
+</g>
+</svg>`;
+    vilCache.svg = svg;
+    return svg;
+  }
+  /** 夜が明けて村人が松明を掲げる全画面の演出。タップで早送り。 */
+  function villagePortrait(ms, opts) {
+    opts = opts || {};
+    const L = layer(ms);
+    L.innerHTML = `<div class="fx-vil${opts.gold ? ' gold' : ''}"><div class="v-dawn"></div>${reduce() ? '' : '<div class="fx-rays gold"></div>'}${villageArt()}<div class="v-ground"></div><div class="w-vig"></div><div class="v-ring"></div><div class="fx-flash village"></div></div>`;
+    const V = L.firstElementChild;
+    V.addEventListener('pointerdown', () => { L.classList.add('out'); setTimeout(() => L.remove(), 650); }, { once: true });
+    setTimeout(() => {
+      if (!L.isConnected) return;
+      if (opts.sound !== false) SFX.bell();
+      buzz([40, 40, 40, 40, 120]);
+    }, reduce() ? 0 : 1050);
+    particles(L, ms, (ps, W, H) => {
+      sparkles(ps, W / 2, H * .52, opts.sparkles || 70, ['#fff3c4', '#ffd76a', '#ffffff', '#4fd4b4']);
+      ps.forEach(p => { p.delay = 1.05; });
+      if (opts.confetti) confetti(ps, W, H, opts.confetti);
+    });
+    return new Promise(r => setTimeout(r, ms));
+  }
   /** 人狼の顔が闇から現れる全画面の演出。タップで早送り。 */
   function wolfPortrait(ms, opts) {
     opts = opts || {};
@@ -454,6 +583,7 @@ ${moonEl}
   const FX = {
     sfx: SFX,
     wolfPortrait,
+    villagePortrait,
     /** 役職カードを見せたとき（自分だけが見る演出） */
     role(card, role) {
       if (!card) return;
@@ -466,11 +596,12 @@ ${moonEl}
           particles(L, 1800, (ps, W, H) => embers(ps, W, H, 30));
         });
       } else {
-        card.classList.add('fx-flip', 'fx-glow-village');
-        const L = layer(2400);
-        L.innerHTML = `<div class="fx-flash village"></div><div class="fx-rays"></div>`;
-        const [cx, cy] = centerOf(card);
-        particles(L, 2400, ps => sparkles(ps, cx, cy, 60, ['#4fd4b4', '#f4c54a', '#ffffff']));
+        villagePortrait(reduce() ? 1200 : 2700, { sound: false, sparkles: 60 }).then(() => {
+          card.classList.add('fx-flip', 'fx-glow-village');
+          const L = layer(1800);
+          const [cx, cy] = centerOf(card);
+          particles(L, 1800, ps => sparkles(ps, cx, cy, 40, ['#4fd4b4', '#f4c54a', '#ffffff']));
+        });
       }
     },
     /** 正体発表の前のため（暗転＋鼓動）。待ち時間のPromiseを返す */
@@ -492,12 +623,14 @@ ${moonEl}
           particles(L, 2000, (ps, W, H) => embers(ps, W, H, 40));
         });
       } else {
-        if (textEl) textEl.classList.add('fx-slam');
-        const L = layer(2800);
-        L.innerHTML = `<div class="fx-flash village"></div><div class="fx-rays"></div>`;
-        const [cx, cy] = textEl ? centerOf(textEl) : [innerWidth / 2, innerHeight / 2];
-        particles(L, 2800, ps => sparkles(ps, cx, cy, 80, ['#4fd4b4', '#bdf5e8', '#ffffff']));
-        SFX.chime(); buzz(50);
+        if (textEl) textEl.style.opacity = '0';
+        villagePortrait(reduce() ? 1200 : 2600, { sparkles: 80 }).then(() => {
+          if (textEl) { textEl.style.opacity = ''; textEl.classList.add('fx-slam'); }
+          SFX.chime();
+          const L = layer(2000);
+          const [cx, cy] = textEl ? centerOf(textEl) : [innerWidth / 2, innerHeight / 2];
+          particles(L, 2000, ps => sparkles(ps, cx, cy, 60, ['#4fd4b4', '#bdf5e8', '#ffffff']));
+        });
       }
     },
     /** 勝敗発表 */
@@ -510,11 +643,11 @@ ${moonEl}
         });
         buzz([120, 60, 120, 60, 300]);
       } else {
-        const L = layer(4200);
-        L.innerHTML = `<div class="fx-sun"></div><div class="fx-rays gold"></div>`;
-        particles(L, 4200, (ps, W, H) => confetti(ps, W, H, 140));
-        SFX.fanfare();
-        buzz([40, 40, 40, 40, 120]);
+        villagePortrait(reduce() ? 1400 : 3400, { gold: true, sparkles: 90, confetti: 120 }).then(() => {
+          SFX.fanfare();
+          const L = layer(2600);
+          particles(L, 2600, (ps, W, H) => confetti(ps, W, H, 100));
+        });
       }
     },
     /** 音のオン・オフボタン（data-fx-mute で自動的に動く） */
